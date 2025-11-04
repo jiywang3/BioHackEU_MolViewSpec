@@ -6,14 +6,14 @@ To test the deposited HTML file index.html, you can use npm to set up a static-s
 The help page about Mol View Spec is at https://molstar.org/mol-view-spec-docs/. Some examples are available at https://molstar.org/mol-view-spec/.
 
 ## Team Members:
-David Sehnal
-Philippe Youkharibache
-Adam Midlik
-Jiyao Wang
-Chris Henn
-Ravi Abrol
-Mahin momin
-Marc Baaden
-Elyse Cheng
+David Sehnal<br>
+Philippe Youkharibache<br>
+Adam Midlik<br>
+Jiyao Wang<br>
+Chris Henn<br>
+Ravi Abrol<br>
+Mahin momin<br>
+Marc Baaden<br>
+Elyse Cheng<br>
 
 
