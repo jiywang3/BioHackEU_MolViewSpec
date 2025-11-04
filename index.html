@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- Replace "latest" by the specific version you want to use, e.g. "4.0.0" -->
+        <script src="https://cdn.jsdelivr.net/npm/molstar@5.2.0/build/viewer/molstar.js"></script>
+        <!-- Replace "latest" by the specific version you want to use, e.g. "4.0.0" -->
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@5.2.0/build/viewer/molstar.css" />
+    </head>
+    <body>
+        <div id="viewer3" style="position: relative; width: 500px; height: 500px;"></div>
+        <script>
+			//let url = "https://www.ncbi.nlm.nih.gov/Structure/icn3d/full_3.45.3.html?mmdbid=1kq2&date=20251103&v=3.45.3&command=load mmdb 1kq2 | parameters &mmdbid=1kq2; style proteins sphere; color 0F0|||pos:0.000,0.000,204.9|dir:0.000,0.000,-1.000|up:0.000,1.000,0.000|fov:20.00";
+			let url = 'https://www.ncbi.nlm.nih.gov/Structure/icn3d/full_3.45.3.html?mmdbafid=1KQ2&date=20251103&v=3.45.3&command=load mmdbaf1 1KQ2 | parameters &mmdbafid=1KQ2; defined sets; select sets !A; color F00; select sets !B; color 00FF7F; select sets !H; color 00F; select sets !I; color FF69B4; select sets !K; color FF8C00; select sets !M; color 0FF; style proteins sphere|||pos:0.000,0.000,204.9|dir:0.000,0.000,-1.000|up:0.000,1.000,0.000|fov:20.00';
+
+			icn3dUrl2molstar(url);
+
+			async function icn3dUrl2molstar(url) {
+				let result = icn3dUrl2CmdsPdb(url);
+				console.log(result)
+
+				// Build an ad-hoc MVS view
+				const builder = molstar.PluginExtensions.mvs.MVSData.createBuilder();
+				const structure = builder
+					.download({ url: 'https://www.ebi.ac.uk/pdbe/entry-files/' + result.pdbid.toLowerCase() + '.bcif' })
+					.parse({ format: 'bcif' })
+					.modelStructure({});
+	/*
+				structure
+					.component({ selector: 'polymer' })
+					.representation({ type: 'cartoon' })
+					.color({ color: 'green' });
+	*/
+
+				// from the commands, convert each selection-style-color into one view
+				let selection, style, color, prevWord, prevSelection, prevStyle, prevColor;
+				for(let i = 0, il = commandArray.length; i < il; ++i) {
+					let firstWord = commandArray[i].substr(0, commandArray[i].indexOf(' '));
+					if(firstWord != 'select' && firstWord != 'style' && firstWord != 'color') continue;
+
+					if(firstWord == 'select') {
+						selection = convertSelection(commandArray[i]);
+
+						if(prevWord != 'select' && prevSelection && prevStyle && prevColor) {
+							structure
+								.component({ selector: prevSelection })
+								.representation({ type: prevStyle })
+								.color({ color: prevColor });
+						}
+					}
+					if(firstWord == 'style') {
+						style = convertStyle(commandArray[i]);
+					}
+					if(firstWord == 'color') {
+						color = convertColor(commandArray[i]);
+					}
+
+					prevWord = firstWord;
+					prevSelection = selection;
+					prevStyle = style;
+					prevColor = color;
+				}
+
+				// last representation
+				if(prevWord != 'select' && prevSelection && prevStyle && prevColor) {
+					structure
+						.component({ selector: prevSelection })
+						.representation({ type: prevStyle })
+						.color({ color: prevColor });
+				}
+
+				//structure
+				//    .component({ selector: 'polymer' });
+
+	/*
+				structure
+					.component({ selector: 'ligand' })
+					.label({ text: 'Retinoic acid' })
+					.focus({})
+					.representation({ type: 'ball_and_stick' })
+					.color({ color: '#cc3399' });
+	*/
+				const mvsData = builder.getState();
+
+				console.log(JSON.stringify(mvsData));
+
+				// Initialize viewer and load MVSJ
+				molstar.Viewer
+					.create('viewer3', { layoutIsExpanded: false, layoutShowControls: false })
+					.then(viewer => molstar.PluginExtensions.mvs.loadMVS(viewer.plugin, mvsData, { sourceUrl: undefined, sanityChecks: true, replaceExisting: false }));
+			}
+
+			function icn3dUrl2CmdsPdb(url) {
+				// separating the GET parameters from the current URL
+				// repalce "color #" with "color " in the url
+				url = url.replace(/\#/g, '');
+
+				let bNopara = false;
+				let ampPos = url.indexOf("?");
+				if(ampPos === -1) {
+				//  alert("Please include '?pdbid=1GPK,2POR,...' in your url");
+					bNopara = true;
+				}
+
+				let getParams = url.split("?");
+				// transforming the GET parameters into a dictionnary
+				let search = getParams[getParams.length - 1];
+
+				let pdbid="", command="";
+				if(!bNopara) {
+					let decodeSearch = decodeURIComponent(search), paraStr;
+
+					// command could contains '&', for example when loading statefile 'load mmdb 1kq2 | parameters &atype=1'
+					let commandPos = decodeSearch.indexOf('&command=');
+					if(commandPos != -1) {
+						command = decodeSearch.substr(commandPos + 9); // ";" separated commands
+						paraStr = decodeSearch.substr(0, commandPos);
+					}
+
+					let hashes = paraStr.split('&');
+					for (let i = 0; i < hashes.length; i++) {
+						let hash = hashes[i].split('=');
+
+						if(hash[0].substr(hash[0].length - 2, 2) == "id") {
+							pdbid = hash[1];
+						}
+					}
+				}
+
+				//remove camera info after "|||"
+				let camInfoPos=command.indexOf("|||");
+				command = command.substr(0, camInfoPos).replace(/\+/g, ' ').replace(/\!/g, pdbid + '_');
+				commandArray = (command) ? command.split('; ') : [];
+
+				return {'pdbid': pdbid, 'commandArray': commandArray};
+			}
+
+			function cloneHash(from) { let me = this.icn3dui;
+			  let to = {};
+
+			  if(from === undefined) from = {};
+
+			  for(let i in from) {
+				to[i] = from[i];
+			  }
+
+			  return to;
+			}
+
+            function convertSelection(selection) {
+            	let molSel = '';
+
+            	let bPredefined = true;
+
+            	let selSpec = selection.substr(selection.indexOf(' ') + 1);
+
+			    let moleculeArray=[], chainArray=[], residueArray=[], atomStrArray=[];
+
+            	if(selSpec.substr(0, 4) == 'sets') {
+            		let stru_chain_resi = selSpec.substr(5).split('_');
+            		moleculeArray.push(stru_chain_resi[0]);
+            		if(stru_chain_resi.length > 1) chainArray.push(stru_chain_resi[1]);
+            		if(stru_chain_resi.length > 2) residueArray.push(stru_chain_resi[2]);
+            	}
+            	else {
+				   let dollarPos = selSpec.indexOf('$');
+				   let periodPos = selSpec.indexOf('.');
+				   let colonPos = selSpec.indexOf(':');
+				   let atPos = selSpec.indexOf('@');
+
+				   let testStr = selSpec;
+
+				   if(atPos != -1) {
+					 bPredefined = false;
+
+					 atomStrArray = testStr.substr(atPos + 1).split(',');
+					 testStr = testStr.substr(0, atPos);
+				   }
+
+				   if(colonPos != -1) {
+					 bPredefined = false;
+
+					 residueArray = testStr.substr(colonPos + 1).split(',');
+					 testStr = testStr.substr(0, colonPos);
+				   }
+
+				   if(periodPos != -1) {
+					 bPredefined = false;
+
+					 let chainStr = testStr.substr(periodPos + 1);
+
+					 //replace "A_1" with "A"
+					 chainArray = chainStr.replace(/_/g, '').split(',');
+
+					 testStr = testStr.substr(0, periodPos);
+				   }
+
+				   if(dollarPos != -1) {
+					 bPredefined = false;
+
+					 moleculeArray = testStr.substr(dollarPos + 1).split(',');
+					 testStr = testStr.substr(0, dollarPos);
+				   }
+			  }
+
+				molSel = [];
+				for(let i = 0, il = chainArray.length; i < il; ++i) {
+					molSel.push({'auth_asym_id': chainArray[i]});
+				}
+
+				if(molSel.length > 0) {
+					for(let i = 0, il = molSel.length; i < il; ++i) {
+						let baseObj = cloneHash(molSel[i]);
+
+						for(let j = 0, jl = residueArray.length; j < jl; ++j) {
+							if(i == 0) {
+								if(residueArray[j].indexOf('-') != -1) {
+									let begin_end = residueArray[j].split('-');
+									molSel[i]['beg_auth_seq_id'] = begin_end[0];
+									molSel[i]['end_auth_seq_id'] = begin_end[1];
+								}
+								else {
+									molSel[i]['auth_seq_id'] = residueArray[j];
+								}
+							}
+							else {
+								if(residueArray[j].indexOf('-') != -1) {
+									let begin_end = residueArray[j].split('-');
+									baseObj['beg_auth_seq_id'] = begin_end[0];
+									baseObj['end_auth_seq_id'] = begin_end[1];
+								}
+								else {
+									baseObj['auth_seq_id'] = residueArray[j];
+								}
+
+								molSel.push(baseObj);
+							}
+						}
+					}
+				}
+				else {
+					for(let j = 0, jl = residueArray.length; j < jl; ++j) {
+						let baseObj = {};
+						if(residueArray[j].indexOf('-') != -1) {
+							let begin_end = residueArray[j].split('-');
+							baseObj['beg_auth_seq_id'] = begin_end[0];
+							baseObj['end_auth_seq_id'] = begin_end[1];
+						}
+						else {
+							baseObj['auth_seq_id'] = residueArray[j];
+						}
+
+						molSel.push(baseObj);
+					}
+				}
+
+            	//iCn3D: proteins, nucleotides, chemicals, ions, and water
+            	//molstar: "all", "polymer", "protein", "nucleic", "branched", "ligand", "ion", "water"
+            	if(bPredefined) {
+					if(selSpec == 'proteins') {
+						molSel = 'protein';
+					}
+					else if(selSpec == 'nucleotides') {
+						molSel = 'nucleic';
+					}
+					else if(selSpec == 'chemicals') {
+						molSel = 'ligand';
+					}
+					else if(selSpec == 'ions') {
+						molSel = 'ion';
+					}
+					else if(selSpec == 'water') {
+						molSel = 'water';
+					}
+            	}
+
+            	return molSel;
+            }
+
+            function convertStyle(style) {
+            	let type_style = style.substr(style.indexOf(' ') + 1);
+            	let pos = type_style.indexOf(' ');
+            	let type = type_style.substr(0, pos);
+            	let styleName = type_style.substr(pos + 1);
+
+            	let molStyle = '';
+
+            	//iCn3D styles:
+            	//protein: ribbon, strand, cylinder and plate, schematic, c alpha trace, backbone, b factor tube, lines, stick, ball and stick, sphere, nothing
+            	//nucleotide: nucleotide cartoon, o3 trace, backbone, schematic, lines, stick, ball and stick, sphere, nothing
+
+            	//MolStar styles:
+            	//cartoon | ball_and_stick | spacefill | carbohydrate | surface
+            	if(styleName == 'ribbon') {
+            		molStyle = 'cartoon';
+            	}
+            	else if(styleName == 'c alpha trace') {
+            		molStyle = 'backbone';
+            	}
+            	else if(styleName == 'lines') {
+            		molStyle = 'line';
+            	}
+            	else if(styleName == 'ball and stick') {
+            		molStyle = 'ball_and_stick';
+            	}
+            	else if(styleName == 'sphere') {
+            		molStyle = 'spacefill';
+            	}
+
+            	return molStyle;
+            }
+
+            function convertColor(color) {
+            	let colorCode = color.substr(color.indexOf(' ') + 1);
+
+				if(color == 'red' || color == 'green' || color == 'blue' || color == 'pink' || color == 'magenta' || color == 'yellow' || color == 'orange' || color == 'cyan' || color == 'purple' || color == 'gray' || color == 'white' || color == 'black') {
+					return color;
+				}
+				else {
+					if(colorCode.length == 3) colorCode = colorCode[0] + colorCode[0] + colorCode[1] + colorCode[1] + colorCode[2] + colorCode[2];
+
+					return "#" + colorCode;
+				}
+            }
+        </script>
+    </body>
+</html>
