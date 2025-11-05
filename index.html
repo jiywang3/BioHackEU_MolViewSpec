@@ -37,14 +37,19 @@
 					let firstWord = commandArray[i].substr(0, commandArray[i].indexOf(' '));
 					if(firstWord != 'select' && firstWord != 'style' && firstWord != 'color') continue;
 
+console.log("commandArray[i]: " + commandArray[i])
 					if(firstWord == 'select') {
 						selection = convertSelection(commandArray[i]);
 
-						if(prevWord != 'select' && prevSelection && prevStyle && prevColor) {
+						if(prevWord != 'select') {
 							structure
-								.component({ selector: prevSelection })
-								.representation({ type: prevStyle })
-								.color({ color: prevColor });
+								.component(prevSelection ? { selector: prevSelection } : {})
+								.representation(prevStyle ? { type: prevStyle } : {})
+								.color(prevColor ? { color: prevColor } : {});
+console.log("prevSelection : " + prevSelection + " prevStyle: " + prevStyle + " prevColor: " + prevColor)
+							prevSelection = undefined;
+							prevStyle = undefined;
+							prevColor = undefined;
 						}
 					}
 					if(firstWord == 'style') {
@@ -61,15 +66,12 @@
 				}
 
 				// last representation
-				if(prevWord != 'select' && prevSelection && prevStyle && prevColor) {
+				if(prevWord != 'select') {
 					structure
-						.component({ selector: prevSelection })
-						.representation({ type: prevStyle })
-						.color({ color: prevColor });
+						.component(prevSelection ? { selector: prevSelection } : {})
+						.representation(prevStyle ? { type: prevStyle } : {})
+						.color(prevColor ? { color: prevColor } : {});
 				}
-
-				//structure
-				//    .component({ selector: 'polymer' });
 
 	/*
 				structure
