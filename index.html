@@ -41,9 +41,9 @@ console.log("commandArray[i]: " + commandArray[i])
 					if(firstWord == 'select') {
 						selection = convertSelection(commandArray[i]);
 
-						if(prevWord != 'select') {
+						if(prevWord != 'select' && prevSelection) {
 							structure
-								.component(prevSelection ? { selector: prevSelection } : {})
+								.component({ selector: prevSelection })
 								.representation(prevStyle ? { type: prevStyle } : {})
 								.color(prevColor ? { color: prevColor } : {});
 console.log("prevSelection : " + prevSelection + " prevStyle: " + prevStyle + " prevColor: " + prevColor)
@@ -66,9 +66,9 @@ console.log("prevSelection : " + prevSelection + " prevStyle: " + prevStyle + " 
 				}
 
 				// last representation
-				if(prevWord != 'select') {
+				if(prevWord != 'select' && prevSelection) {
 					structure
-						.component(prevSelection ? { selector: prevSelection } : {})
+						.component({ selector: prevSelection })
 						.representation(prevStyle ? { type: prevStyle } : {})
 						.color(prevColor ? { color: prevColor } : {});
 				}
