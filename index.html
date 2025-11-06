@@ -92,6 +92,8 @@
 
        if(lines !== undefined) {
          for(let name in lines) {
+         	 if(name == "missingres") continue;
+
              let lineArray = lines[name];
 
              for(let i = 0, il = lineArray.length; i < il; ++i) {
@@ -109,7 +111,7 @@
                let colorStr = line.color.replace(/\#/g, '');
                if(colorStr.length == 3) colorStr = colorStr[0] + colorStr[0] + colorStr[1] + colorStr[1] + colorStr[2] + colorStr[2];
                colorStr = '#' + colorStr;
-
+/*
 			   structure
 				  .primitives({ opacity: opacity, ref: 'prim_lines' })
 				  .lines({
@@ -119,6 +121,17 @@
 				    //dash_length: 0.25,
 				    width: 1 //radius
   				  });
+*/
+			   structure
+				  .primitives({ opacity: opacity, ref: 'prim_tube' })
+				  .tube({
+				    start: [p1.x, p1.y, p1.z],
+				    end: [p2.x, p2.y, p2.z],
+				    color: colorStr,
+				    dash_length: 0.5 * dashSize,
+				    radius: radius
+  				  });
+
              }
          }
        }
