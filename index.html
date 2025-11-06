@@ -39,9 +39,7 @@
     //Render the scene and objects into pixels.
     icn3d.Draw.prototype.render = function(bVrAr) { let ic = this.icn3d, me = ic.icn3dui;
         let thisClass = this;
-
-        //ic.bRender = false;
-
+/*
         // setAnimationLoop is required for VR
         if(bVrAr) {
             ic.renderer.setAnimationLoop( function() {
@@ -51,7 +49,7 @@
         else {
             thisClass.render_base();
         }
-
+*/
           $("#" + ic.pre + "title").css("color", "black");
           $("#" + ic.pre + "titlelink").css("color", "black");
 
@@ -64,6 +62,10 @@
 		let pdbid = ic.inputid;
 
 		let style2colorSelArray = getStyleColorSel(icn3dui);
+
+		// doc: https://molstar.org/mol-view-spec-docs/
+		// examples: https://molstar.org/mol-view-spec/
+		// many examples: https://molstar.org/mol-view-stories/builder/?template=mvs-features
 
 		// Build an ad-hoc MVS view
 		const builder = molstar.PluginExtensions.mvs.MVSData.createBuilder();
@@ -86,22 +88,57 @@
 			}
 		});
 
-/*
-		structure
-			.component({ selector: 'ligand' })
-			.label({ text: 'Retinoic acid' })
-			.focus({})
-			.representation({ type: 'ball_and_stick' })
-			.color({ color: '#cc3399' });
-*/
+	   let lines = ic.lines;
+
+       if(lines !== undefined) {
+         for(let name in lines) {
+             let lineArray = lines[name];
+
+             for(let i = 0, il = lineArray.length; i < il; ++i) {
+               let line = lineArray[i];
+
+               let p1 = line.position1;
+               let p2 = line.position2;
+
+               let dashed = (line.dashed) ? line.dashed : false;
+               let dashSize = (name == 'missingres') ? 0.8 : 0.3;
+
+               let radius = (line.radius) ? line.radius : ic.lineRadius;
+               let opacity = (line.opacity) ? line.opacity : 1.0;
+
+               let colorStr = line.color.replace(/\#/g, '');
+               if(colorStr.length == 3) colorStr = colorStr[0] + colorStr[0] + colorStr[1] + colorStr[1] + colorStr[2] + colorStr[2];
+               colorStr = '#' + colorStr;
+
+			   structure
+				  .primitives({ opacity: opacity, ref: 'prim_lines' })
+				  .lines({
+				    vertices: [p1.x, p1.y, p1.z, p2.x, p2.y, p2.z],
+				    indices: [0, 1],
+				    color: colorStr,
+				    //dash_length: 0.25,
+				    width: 1 //radius
+  				  });
+             }
+         }
+       }
+
 		const mvsData = builder.getState();
 
 		console.log(JSON.stringify(mvsData));
 
 		// Initialize viewer and load MVSJ
-		molstar.Viewer
-			.create('div0_viewer', { layoutIsExpanded: false, layoutShowControls: false })
-			.then(viewer => molstar.PluginExtensions.mvs.loadMVS(viewer.plugin, mvsData, { sourceUrl: undefined, sanityChecks: true, replaceExisting: false }));
+		//molstar.Viewer
+		//	.create('div0_viewer', { layoutIsExpanded: false, layoutShowControls: false })
+		//	.then(viewer => molstar.PluginExtensions.mvs.loadMVS(viewer.plugin, mvsData, { sourceUrl: undefined, sanityChecks: true, replaceExisting: false }));
+
+		if (!ic.molstarViewer) {
+			ic.molstarViewer = molstar.Viewer
+					.create('div0_viewer', { layoutIsExpanded: false, layoutShowControls: false })
+		}
+
+		// Initialize viewer and load MVSJ
+		ic.molstarViewer.then(viewer => molstar.PluginExtensions.mvs.loadMVS(viewer.plugin, mvsData, { sourceUrl: undefined, sanityChecks: true, replaceExisting: true }));
 	}
 
 	function getStyleColorSel(icn3dui) {
