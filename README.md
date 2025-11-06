@@ -4,7 +4,8 @@ In this project, we are going to convert [iCn3D](https://github.com/ncbi/icn3d) 
 To test the deposited HTML file index.html, you can use npm to set up a static-server "npm install static-server" and launch the file with the command "static-server -i index.html -o". Then change your URL to "http://localhost:9080/index.html?mmdbid=1kq2&bu=1&date=20251106&v=3.45.3&command=load mmdb 1kq2 | parameters &mmdbid=1kq2&bu=1; hide ref number; line graph interaction pairs | !A !B | hbonds,salt bridge,interactions,halogen,pi-cation,pi-stacking | false | threshold 3.8 6 4 3.8 6 5.5|||pos:0.000,0.000,204.9|dir:0.000,0.000,-1.000|up:0.000,1.000,0.000|fov:20.00". Now the image was rendered from molstar. 
 
 The following presentation shows how molstar was used as a rendering engine in iCn3D:
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58d9f748-4ab0-4694-84a6-c58fdf3cdc7b" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e1f46f53-7ddd-4527-93f3-8ba100e26bd2" />
+
 
 
 The help page about Mol View Spec is at https://molstar.org/mol-view-spec-docs/. Some examples are available at https://molstar.org/mol-view-spec/.
